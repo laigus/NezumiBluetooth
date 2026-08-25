@@ -1,0 +1,38 @@
+.device-manager-page { padding-bottom: 150rpx; }
+.manager-hero { position: relative; padding: 38rpx 34rpx 34rpx; overflow: hidden; color: #fff; background: linear-gradient(145deg, #152849, #315a9d 58%, #5369d8); border-radius: 38rpx; box-shadow: 0 22rpx 52rpx rgba(36, 72, 133, .23); }
+.manager-hero::after { position: absolute; top: -160rpx; right: -110rpx; width: 390rpx; height: 390rpx; background: rgba(112, 226, 255, .18); border-radius: 50%; content: ""; }
+.hero-eyebrow { position: relative; z-index: 1; color: #aeeafa; font-size: 19rpx; font-weight: 700; letter-spacing: 4rpx; }
+.hero-title { position: relative; z-index: 1; margin-top: 10rpx; font-size: 48rpx; font-weight: 800; }
+.hero-copy { position: relative; z-index: 1; max-width: 560rpx; margin-top: 14rpx; color: rgba(255,255,255,.72); font-size: 23rpx; line-height: 1.62; }
+.hero-status { position: relative; z-index: 1; display: flex; align-items: center; margin-top: 32rpx; padding: 21rpx 22rpx; background: rgba(255,255,255,.1); border: 1rpx solid rgba(255,255,255,.13); border-radius: 22rpx; }
+.status-dot { width: 18rpx; height: 18rpx; flex-shrink: 0; background: #99a6bd; border-radius: 50%; }
+.status-dot.connected { background: #67efba; box-shadow: 0 0 0 9rpx rgba(103,239,186,.12); }
+.status-dot.scanning { background: #ffd375; animation: pulse 1.4s infinite; }
+.status-copy { display: flex; min-width: 0; flex: 1; flex-direction: column; margin-left: 20rpx; }
+.status-title { font-size: 25rpx; font-weight: 700; }
+.status-detail { margin-top: 4rpx; overflow: hidden; color: rgba(255,255,255,.65); font-size: 20rpx; text-overflow: ellipsis; white-space: nowrap; }
+@keyframes pulse { 0%,100% { opacity: 1; transform: scale(1); } 50% { opacity: .45; transform: scale(.72); } }
+.error-banner { margin-top: 22rpx; padding: 20rpx 24rpx; color: #a42e41; font-size: 23rpx; background: #fff0f2; border: 1rpx solid #ffd7dc; border-radius: 20rpx; }
+.section-row { display: flex; align-items: center; justify-content: space-between; margin: 38rpx 5rpx 18rpx; }
+.count-pill { min-width: 50rpx; padding: 6rpx 12rpx; color: #4d61c8; font-size: 21rpx; font-weight: 700; text-align: center; background: #e9edff; border-radius: 20rpx; }
+.connected-device { display: flex; align-items: center; padding: 28rpx 24rpx; background: #fff; border: 2rpx solid #e7ecf4; border-radius: 29rpx; box-shadow: 0 12rpx 34rpx rgba(55,84,122,.08); }
+.device-icon { display: flex; align-items: center; justify-content: center; width: 90rpx; height: 90rpx; flex-shrink: 0; color: #fff; background: linear-gradient(145deg,#3478ed,#6259df); border-radius: 27rpx; }
+.bluetooth-glyph { font-size: 48rpx; font-weight: 700; transform: rotate(180deg); }
+.device-content { min-width: 0; flex: 1; margin-left: 22rpx; }
+.device-title-row { display: flex; align-items: center; }
+.device-name { min-width: 0; overflow: hidden; color: #1f2d43; font-size: 32rpx; font-weight: 800; text-overflow: ellipsis; white-space: nowrap; }
+.connected-badge { flex-shrink: 0; margin-left: 13rpx; padding: 5rpx 11rpx; color: #268467; font-size: 18rpx; background: #e4f8f0; border-radius: 11rpx; }
+.device-service { display: block; margin-top: 8rpx; overflow: hidden; color: #78869a; font-size: 21rpx; text-overflow: ellipsis; white-space: nowrap; }
+.device-meta { display: flex; margin-top: 10rpx; color: #9aa5b4; font-size: 19rpx; }
+.device-meta text + text { margin-left: 22rpx; }
+.device-arrow { margin-left: 16rpx; color: #6572d7; font-size: 48rpx; }
+.empty-device { padding: 48rpx 32rpx 34rpx; text-align: center; }
+.empty-radar { position: relative; width: 136rpx; height: 136rpx; margin: 0 auto 24rpx; }
+.radar-ring { position: absolute; border: 2rpx solid #cdd6ee; border-radius: 50%; }
+.ring-a { inset: 8rpx; }
+.ring-b { inset: 32rpx; }
+.radar-core { position: absolute; top: 58rpx; left: 58rpx; width: 20rpx; height: 20rpx; background: #5c6ed9; border-radius: 50%; }
+.empty-title { color: #2f3b4e; font-size: 29rpx; font-weight: 700; }
+.empty-copy { margin-top: 11rpx; color: #8490a0; font-size: 22rpx; line-height: 1.6; }
+.connect-button { margin-top: 28rpx; font-size: 26rpx; }
+.manager-note { padding: 30rpx 16rpx 0; color: #929dac; font-size: 20rpx; line-height: 1.6; text-align: center; }

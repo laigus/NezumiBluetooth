@@ -1,0 +1,48 @@
+<view class="page-shell control-page">
+  <view class="device-hero">
+    <view class="device-topline">
+      <view class="device-state"><view class="state-dot {{connected ? 'online' : 'offline'}}"></view>{{connected ? '已连接' : '已断开'}}</view>
+      <text class="device-protocol">{{protocolText}}</text>
+    </view>
+    <view class="device-name">{{deviceName}}</view>
+    <view class="device-connection">{{connectionText}}</view>
+    <view class="device-meta"><text wx:if="{{rssiText}}">{{rssiText}}</text><text>{{mtuText}}</text></view>
+    <view class="device-actions">
+      <button class="import-button" loading="{{importing}}" disabled="{{importing || disconnecting}}" bindtap="importFrequency">导入频率</button>
+      <button class="disconnect-button" loading="{{disconnecting}}" disabled="{{disconnecting}}" bindtap="disconnectDevice">断开蓝牙</button>
+    </view>
+  </view>
+
+  <view class="error-banner" wx:if="{{errorText}}">{{errorText}}</view>
+
+  <view class="library-heading">
+    <view><view class="section-title">频率列表</view><view class="section-subtitle">快捷运行，点击卡片查看详情与波形</view></view>
+    <text class="frequency-count">{{frequencies.length}} 个</text>
+  </view>
+
+  <view class="frequency-list" wx:if="{{frequencies.length}}">
+    <view class="frequency-card {{item.active ? 'active' : ''}}" wx:for="{{frequencies}}" wx:key="id" data-id="{{item.id}}" bindtap="openFrequency">
+      <view class="frequency-top">
+        <view class="frequency-copy">
+          <view class="frequency-name-row"><text class="frequency-name">{{item.name}}</text><text class="origin-tag">{{item.originText}}</text></view>
+          <text class="frequency-description" wx:if="{{item.description}}">{{item.description}}</text>
+          <text class="frequency-meta">{{item.durationText}} · {{item.frameText}}</text>
+        </view>
+        <text class="detail-arrow">›</text>
+      </view>
+      <view class="runtime-status" wx:if="{{item.statusText}}"><view class="runtime-dot"></view>{{item.statusText}}</view>
+      <view class="time-progress" wx:if="{{item.progressVisible}}">
+        <view class="progress-copy"><text>{{item.progressTimeText}}</text><text>{{item.progressPercentText}}</text></view>
+        <view class="progress-track"><view class="progress-fill" style="width: {{item.progressWidth}};"></view></view>
+      </view>
+      <view class="frequency-actions">
+        <button class="start-action" data-id="{{item.id}}" disabled="{{item.startDisabled}}" catchtap="startFrequency">开始</button>
+        <button class="stop-action" data-id="{{item.id}}" disabled="{{item.stopDisabled}}" catchtap="stopFrequency">停止</button>
+      </view>
+    </view>
+  </view>
+
+  <view class="card empty-state" wx:else>
+    还没有可用频率。点上方“导入频率”，从微信聊天选择频率文件。
+  </view>
+</view>

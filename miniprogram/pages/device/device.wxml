@@ -1,0 +1,258 @@
+<view class="page-shell device-page">
+  <view class="device-hero">
+    <view class="hero-grid"></view>
+    <view class="device-hero-top">
+      <view class="device-emblem">BLE</view>
+      <view class="connection-pill {{connected ? 'online' : 'offline'}}">
+        <view class="pill-dot"></view>
+        <text>{{connected ? '已连接' : '已断开'}}</text>
+      </view>
+    </view>
+    <view class="device-title">{{deviceName}}</view>
+    <view class="device-identifier mono">{{deviceId}}</view>
+    <view class="metric-row">
+      <view class="metric">
+        <text class="metric-value">{{mtu}}</text>
+        <text class="metric-label">MTU</text>
+      </view>
+      <view class="metric-divider"></view>
+      <view class="metric">
+        <text class="metric-value">{{serviceCount}}</text>
+        <text class="metric-label">GATT 服务</text>
+      </view>
+      <view class="metric-divider"></view>
+      <view class="metric">
+        <text class="metric-value">{{packets.length}}</text>
+        <text class="metric-label">本次收发</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="error-banner" wx:if="{{errorText}}">{{errorText}}</view>
+
+  <view class="card program-card" wx:if="{{programs.length}}">
+    <view class="section-title">内置频率验证</view>
+    <view class="section-subtitle">设备控制页负责日常使用；这里保留频率与底层通道的联合调试。</view>
+
+    <view class="program-status">
+      <view class="program-status-head">
+        <text class="program-status-text">{{programStatusText}}</text>
+        <text class="program-progress-value">{{programProgress}}%</text>
+      </view>
+      <view class="program-progress-track">
+        <view class="program-progress-fill" style="width: {{programProgress}}%;"></view>
+      </view>
+      <view class="program-details">
+        <text>{{programElapsedText}}</text>
+        <text>{{programFrameText}}</text>
+      </view>
+    </view>
+
+    <view class="program-option" wx:for="{{programs}}" wx:key="id">
+      <view class="program-copy">
+        <text class="program-name">{{item.label}}</text>
+        <text class="program-description">{{item.description}}</text>
+        <text class="program-evidence">{{item.durationText}} · {{item.frameCount}} 帧</text>
+      </view>
+      <button
+        class="primary-button program-start"
+        data-id="{{item.id}}"
+        disabled="{{!connected || programRunning || programStopping || busy}}"
+        loading="{{programRunning && runningProgramId === item.id}}"
+        bindtap="startProgram"
+      >开始运行</button>
+    </view>
+
+    <button
+      class="danger-button program-stop"
+      disabled="{{!connected || programStopping}}"
+      loading="{{programStopping}}"
+      bindtap="stopProgram"
+    >立即停止</button>
+  </view>
+
+  <view class="card channel-card">
+    <view class="section-title">当前通道</view>
+    <view class="channel-row">
+      <text class="channel-label">写入</text>
+      <text class="channel-value mono">{{activeWrite}}</text>
+    </view>
+    <view class="channel-row">
+      <text class="channel-label notify-label">通知</text>
+      <text class="channel-value mono">{{activeNotify}}</text>
+    </view>
+  </view>
+
+  <view class="card command-card" wx:if="{{builtInCommands.length}}">
+    <view class="section-title">设备控制</view>
+    <view class="section-subtitle">已固化到设备协议配置中的快捷动作</view>
+    <view class="command-grid">
+      <button
+        class="primary-button command-button"
+        wx:for="{{builtInCommands}}"
+        wx:key="id"
+        data-hex="{{item.hex}}"
+        loading="{{sending}}"
+        bindtap="sendBuiltInCommand"
+      >{{item.label}}</button>
+    </view>
+  </view>
+
+  <view class="card transmit-card">
+    <view class="section-title">协议调试（高级）</view>
+    <view class="section-subtitle">这里只用于单独验证其他 HEX 帧。</view>
+    <view class="mode-switch">
+      <view class="mode-option {{inputMode === 'hex' ? 'active' : ''}}" data-mode="hex" bindtap="setInputMode">HEX</view>
+      <view class="mode-option {{inputMode === 'text' ? 'active' : ''}}" data-mode="text" bindtap="setInputMode">文本</view>
+    </view>
+    <textarea
+      class="payload-input mono"
+      value="{{inputValue}}"
+      maxlength="4096"
+      placeholder="{{inputMode === 'hex' ? '例如：AA 01 00 FF' : '输入 UTF-8 文本'}}"
+      bindinput="onInput"
+    />
+    <button
+      class="primary-button send-button"
+      disabled="{{!connected || sending || programRunning || programStopping}}"
+      loading="{{sending}}"
+      bindtap="sendInput"
+    >发送到设备</button>
+  </view>
+
+  <view class="card saved-card">
+    <view class="section-title">高级快捷命令</view>
+    <view class="section-subtitle">把已经验证有效的 HEX 保存到本机。</view>
+
+    <view class="saved-list" wx:if="{{savedCommands.length}}">
+      <view class="saved-command" wx:for="{{savedCommands}}" wx:key="id">
+        <view class="saved-command-main" data-index="{{index}}" bindtap="sendSavedCommand">
+          <text class="saved-name">{{item.name}}</text>
+          <text class="saved-hex mono">{{item.hex}}</text>
+        </view>
+        <button class="delete-command" size="mini" data-index="{{index}}" bindtap="deleteSavedCommand">删除</button>
+      </view>
+    </view>
+
+    <view class="new-command">
+      <input
+        class="command-input"
+        value="{{newCommandName}}"
+        placeholder="命令名称，例如：开启"
+        bindinput="onCommandNameInput"
+      />
+      <input
+        class="command-input mono"
+        value="{{newCommandHex}}"
+        placeholder="HEX，例如：AA 01 01 00"
+        bindinput="onCommandHexInput"
+      />
+      <button class="secondary-button add-command" bindtap="addSavedCommand">保存快捷命令</button>
+    </view>
+  </view>
+
+  <view class="card traffic-card">
+    <view class="section-header">
+      <view>
+        <view class="section-title">收发记录</view>
+        <view class="section-subtitle">通知数据和本次写入会按时间倒序显示。</view>
+      </view>
+      <text class="clear-link" bindtap="clearPackets">清空</text>
+    </view>
+
+    <view class="packet-list" wx:if="{{packets.length}}">
+      <view class="packet" wx:for="{{packets}}" wx:key="id">
+        <view class="packet-meta">
+          <text class="direction {{item.direction === 'RX' ? 'rx' : 'tx'}}">{{item.direction}}</text>
+          <text>{{item.time}}</text>
+          <text class="mono">{{item.characteristic}}</text>
+        </view>
+        <view class="packet-hex mono">{{item.hex || '(空数据)'}}</view>
+        <view class="packet-text" wx:if="{{item.text}}">{{item.text}}</view>
+      </view>
+    </view>
+    <view class="compact-empty" wx:else>等待设备通知或发送第一条命令</view>
+
+    <view class="button-row traffic-actions">
+      <button class="secondary-button" bindtap="copySessionLog">复制会话</button>
+      <button class="ghost-button" bindtap="copyDeviceProfile">复制设备画像</button>
+    </view>
+  </view>
+
+  <view class="card gatt-card">
+    <view class="section-header" bindtap="toggleGatt">
+      <view>
+        <view class="section-title">GATT 服务与特征</view>
+        <view class="section-subtitle">点选真实写入通道，或开启通知与读取。</view>
+      </view>
+      <text class="expand-icon">{{gattExpanded ? '收起' : '展开'}}</text>
+    </view>
+
+    <view wx:if="{{gattExpanded}}">
+      <view class="service" wx:for="{{services}}" wx:for-item="service" wx:key="uuid">
+        <view class="service-head">
+          <view>
+            <text class="service-badge">{{service.isPrimary ? 'PRIMARY' : 'SERVICE'}}</text>
+            <text class="service-short mono">{{service.shortUuid}}</text>
+          </view>
+          <text class="service-count">{{service.characteristics.length}} 个特征</text>
+        </view>
+        <view class="service-uuid mono">{{service.uuid}}</view>
+        <view class="service-error" wx:if="{{service.discoveryError}}">{{service.discoveryError}}</view>
+
+        <view
+          class="characteristic {{characteristic.isWriteTarget ? 'selected-write' : ''}} {{characteristic.isNotifyTarget ? 'selected-notify' : ''}}"
+          wx:for="{{service.characteristics}}"
+          wx:for-item="characteristic"
+          wx:key="uuid"
+        >
+          <view class="characteristic-main">
+            <text class="characteristic-short mono">{{characteristic.shortUuid}}</text>
+            <text class="capabilities">{{characteristic.capabilityText}}</text>
+          </view>
+          <view class="characteristic-uuid mono">{{characteristic.uuid}}</view>
+          <view class="characteristic-actions">
+            <button
+              wx:if="{{characteristic.canWrite}}"
+              class="mini-action {{characteristic.isWriteTarget ? 'active-action' : ''}}"
+              size="mini"
+              data-service="{{service.uuid}}"
+              data-characteristic="{{characteristic.uuid}}"
+              bindtap="chooseWriteCharacteristic"
+            >{{characteristic.isWriteTarget ? '当前写入' : '设为写入'}}</button>
+            <button
+              wx:if="{{characteristic.canNotify}}"
+              class="mini-action {{characteristic.isNotifyTarget ? 'notify-action' : ''}}"
+              size="mini"
+              data-service="{{service.uuid}}"
+              data-characteristic="{{characteristic.uuid}}"
+              bindtap="enableNotification"
+            >{{characteristic.isNotifyTarget ? '通知已选' : '开启通知'}}</button>
+            <button
+              wx:if="{{characteristic.canRead}}"
+              class="mini-action"
+              size="mini"
+              data-service="{{service.uuid}}"
+              data-characteristic="{{characteristic.uuid}}"
+              bindtap="readCharacteristic"
+            >读取</button>
+          </view>
+        </view>
+      </view>
+
+      <view class="compact-empty" wx:if="{{!services.length}}">还没有发现 GATT 服务</view>
+      <button class="ghost-button refresh-gatt" loading="{{busy}}" bindtap="refreshGatt">重新发现服务</button>
+    </view>
+  </view>
+
+  <view class="card diagnostic-card" wx:if="{{logs.length}}">
+    <view class="section-title">运行日志</view>
+    <view class="log-row" wx:for="{{logs}}" wx:key="id">
+      <text class="log-time mono">{{item.time}}</text>
+      <text class="log-level level-{{item.level}}">{{item.level}}</text>
+      <text class="log-message">{{item.message}}</text>
+    </view>
+  </view>
+
+  <button class="danger-button disconnect-button" loading="{{busy}}" bindtap="disconnectAndBack">断开并返回</button>
+</view>

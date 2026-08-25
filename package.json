@@ -1,0 +1,8 @@
+{
+  "name": "haohao-bluetooth-miniprogram",
+  "private": true,
+  "description": "耗耗蓝牙微信小程序",
+  "scripts": {
+    "test": "node tests/run-tests.js"
+  }
+}

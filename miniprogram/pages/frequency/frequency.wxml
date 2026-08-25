@@ -1,0 +1,49 @@
+<view class="page-shell frequency-page">
+  <view class="frequency-hero">
+    <view class="hero-top"><text class="origin-tag">{{originText}}</text><text class="connection-tag {{connected ? 'online' : ''}}">{{connected ? '设备已连接' : '设备已断开'}}</text></view>
+    <view class="frequency-name">{{name}}</view>
+    <view class="frequency-description" wx:if="{{description}}">{{description}}</view>
+    <view class="hero-metrics">
+      <view class="hero-metric"><text class="metric-value">{{durationClock}}</text><text class="metric-label">总时长</text></view>
+      <view class="metric-divider"></view>
+      <view class="hero-metric"><text class="metric-value">{{frameText}}</text><text class="metric-label">发送序列</text></view>
+    </view>
+  </view>
+
+  <view class="error-banner" wx:if="{{errorText}}">{{errorText}}</view>
+
+  <view class="card action-card">
+    <view class="runtime-head">
+      <view class="runtime-status"><view class="status-dot {{running ? 'running' : ''}}"></view>{{statusText}}</view>
+      <text class="runtime-percent" wx:if="{{progressVisible}}">{{progressPercentText}}</text>
+    </view>
+    <view class="detail-progress" wx:if="{{progressVisible}}">
+      <text class="progress-time">{{progressTimeText}}</text>
+      <view class="progress-track"><view class="progress-fill" style="width: {{progressWidth}};"></view></view>
+    </view>
+    <view class="run-actions">
+      <button class="start-button" disabled="{{!connected || runtimeBusy}}" loading="{{running}}" bindtap="startFrequency">开始</button>
+      <button class="stop-button" disabled="{{!connected || !active || !runtimeBusy}}" loading="{{stopping}}" bindtap="stopFrequency">停止</button>
+    </view>
+  </view>
+
+  <view class="card waveform-card">
+    <view class="card-head"><view><view class="section-title">相对强度波形</view><view class="section-subtitle">按发送顺序显示控制值变化</view></view><text class="range-tag">{{valueRangeText}}</text></view>
+    <view class="waveform-chart">
+      <view class="wave-column" wx:for="{{waveform}}" wx:key="id"><view class="wave-fill" style="height: {{item.height}}%;"></view></view>
+    </view>
+    <view class="wave-axis"><text>0:00</text><text>{{durationClock}}</text></view>
+  </view>
+
+  <view class="card detail-card">
+    <view class="section-title">频率信息</view>
+    <view class="detail-grid">
+      <view class="detail-item"><text class="detail-label">时长</text><text class="detail-value">{{durationText}}</text></view>
+      <view class="detail-item"><text class="detail-label">帧数</text><text class="detail-value">{{frameText}}</text></view>
+      <view class="detail-item"><text class="detail-label">平均间隔</text><text class="detail-value">{{averageIntervalText}}</text></view>
+      <view class="detail-item"><text class="detail-label">控制值范围</text><text class="detail-value">{{valueRangeText}}</text></view>
+    </view>
+  </view>
+
+  <button class="export-button" loading="{{exporting}}" disabled="{{exporting}}" bindtap="exportFrequency">导出 / 分享频率</button>
+</view>

@@ -1,0 +1,38 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/debug/debug",
+    "pages/control/control",
+    "pages/frequency/frequency",
+    "pages/device/device"
+  ],
+  "window": {
+    "navigationBarTitleText": "耗耗蓝牙",
+    "navigationBarBackgroundColor": "#F4F7FB",
+    "navigationBarTextStyle": "black",
+    "backgroundColor": "#F4F7FB",
+    "backgroundTextStyle": "dark"
+  },
+  "tabBar": {
+    "color": "#8792A2",
+    "selectedColor": "#4F61CF",
+    "backgroundColor": "#FFFFFF",
+    "borderStyle": "white",
+    "list": [
+      {
+        "pagePath": "pages/index/index",
+        "text": "设备管理",
+        "iconPath": "assets/tab-device.png",
+        "selectedIconPath": "assets/tab-device-active.png"
+      },
+      {
+        "pagePath": "pages/debug/debug",
+        "text": "高级调试",
+        "iconPath": "assets/tab-debug.png",
+        "selectedIconPath": "assets/tab-debug-active.png"
+      }
+    ]
+  },
+  "style": "v2",
+  "sitemapLocation": "sitemap.json"
+}

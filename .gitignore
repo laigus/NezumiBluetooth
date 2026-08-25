@@ -1,0 +1,14 @@
+project.config.json
+project.private.config.json
+miniprogram/project.private.config.json
+node_modules/
+__pycache__/
+*.py[cod]
+.DS_Store
+Thumbs.db
+.tools/
+analysis/
+captures/
+*.haohao-frequency.json
+*.pklg
+sysdiagnose_*

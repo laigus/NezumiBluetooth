@@ -1,0 +1,9 @@
+{
+  "desc": "BLE 工具页不参与索引",
+  "rules": [
+    {
+      "action": "disallow",
+      "page": "*"
+    }
+  ]
+}

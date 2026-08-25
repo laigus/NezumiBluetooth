@@ -1,0 +1,90 @@
+<view class="page-shell discover-page">
+  <view class="hero">
+    <view class="hero-orb hero-orb-a"></view>
+    <view class="hero-orb hero-orb-b"></view>
+    <view class="hero-content">
+      <view class="eyebrow">高级调试 · ALL BLE DEVICES</view>
+      <view class="hero-title">扫描全部设备</view>
+      <view class="hero-copy">这里保留完整扫描、GATT、HEX 收发与画像导出，供新设备分析使用。</view>
+      <view class="status-line">
+        <view class="status-dot {{adapterReady ? 'ready' : 'offline'}} {{scanning ? 'pulse' : ''}}"></view>
+        <text>{{statusText}}</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="error-banner" wx:if="{{errorText}}">
+    <text>{{errorText}}</text>
+    <text class="error-help">请确认手机蓝牙已开启，并在真机中运行。</text>
+  </view>
+
+  <view class="card scan-card">
+    <view class="scan-heading">
+      <view>
+        <view class="section-title">全部附近设备</view>
+        <view class="section-subtitle">{{visibleDevices.length}} 个可见设备</view>
+      </view>
+      <switch color="#4E63F4" checked="{{onlyNamed}}" bindchange="onOnlyNamedChange" />
+    </view>
+    <view class="filter-label">仅显示有名称的设备</view>
+    <button class="{{scanning ? 'ghost-button' : 'primary-button'}} scan-button" bindtap="toggleScan">
+      {{scanning ? '停止扫描' : '开始扫描'}}
+    </button>
+  </view>
+
+  <view class="device-list" wx:if="{{visibleDevices.length}}">
+    <view class="device-card" wx:for="{{visibleDevices}}" wx:key="deviceId">
+      <view class="device-top">
+        <view class="device-icon">
+          <view class="bluetooth-mark">ᛒ</view>
+        </view>
+        <view class="device-main">
+          <view class="device-name">{{item.name}}</view>
+          <view class="device-id mono">{{item.deviceId}}</view>
+        </view>
+        <view class="signal signal-{{item.signalLevel}}">
+          <view class="bar bar-1"></view>
+          <view class="bar bar-2"></view>
+          <view class="bar bar-3"></view>
+          <view class="bar bar-4"></view>
+          <text>{{item.RSSI}} dBm</text>
+        </view>
+      </view>
+
+      <view class="advertisement" wx:if="{{item.serviceSummary || item.advertisDataHex}}">
+        <view class="advert-row" wx:if="{{item.serviceSummary}}">
+          <text class="advert-label">服务</text>
+          <text class="mono advert-value">{{item.serviceSummary}}</text>
+        </view>
+        <view class="advert-row" wx:if="{{item.advertisDataHex}}">
+          <text class="advert-label">广播</text>
+          <text class="mono advert-value one-line">{{item.advertisDataHex}}</text>
+        </view>
+      </view>
+
+      <button
+        class="connect-button {{item.connectable ? 'secondary-button' : 'ghost-button'}}"
+        disabled="{{!item.connectable || connectingId}}"
+        loading="{{connectingId === item.deviceId}}"
+        data-id="{{item.deviceId}}"
+        bindtap="connectDevice"
+      >
+        {{connectingId === item.deviceId ? '正在连接' : (item.connectable ? '连接设备' : '当前不可连接')}}
+      </button>
+    </view>
+  </view>
+
+  <view class="card empty-state" wx:else>
+    <view class="empty-radar">
+      <view class="radar-ring ring-one"></view>
+      <view class="radar-ring ring-two"></view>
+      <view class="radar-core"></view>
+    </view>
+    <view>{{scanning ? '正在监听蓝牙广播…' : '还没有发现设备'}}</view>
+    <view class="muted">让设备进入可连接状态，并先断开原控制端。</view>
+  </view>
+
+  <view class="privacy-note">
+    <text>高级调试会显示全部 BLE 广播；操作记录只保存在本机。</text>
+  </view>
+</view>
