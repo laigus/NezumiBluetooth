@@ -31,15 +31,15 @@ Page({
     connectedDevices: [],
     scanning: false,
     connecting: false,
-    statusTitle: '正在准备蓝牙',
-    statusDetail: '会自动寻找并连接专用设备',
+    statusTitle: '当前没有已连接设备',
+    statusDetail: '点“开始扫描”寻找已支持的设备',
     errorText: ''
   },
 
   onShow() {
     this._visible = true
     this.bindManagerEvents()
-    this.initializeConnection()
+    this.restoreConnectionState()
   },
 
   onHide() {
@@ -55,7 +55,8 @@ Page({
 
   async onPullDownRefresh() {
     try {
-      await this.retryConnection()
+      await this.stopDeviceScan({ silent: true })
+      await this.startDeviceScan()
     } finally {
       wx.stopPullDownRefresh()
     }
@@ -88,7 +89,7 @@ Page({
             connectedDevices: [],
             connecting: false,
             statusTitle: '设备连接已断开',
-            statusDetail: '点“扫描并连接”重新寻找设备'
+            statusDetail: '点“开始扫描”重新寻找设备'
           })
         }
       })
@@ -100,8 +101,7 @@ Page({
     this._unsubscribe = []
   },
 
-  async initializeConnection(force) {
-    if (this._initializing || this.data.connecting) return
+  restoreConnectionState() {
     const snapshot = ble.getSnapshot()
     if (snapshot.connected) {
       if (session.isManagedConnection(snapshot)) {
@@ -112,23 +112,27 @@ Page({
           scanning: false,
           connecting: false,
           statusTitle: '设备正在高级调试中',
-          statusDetail: '断开调试连接后即可自动连接专用设备'
+          statusDetail: '断开调试连接后再手动开始扫描'
         })
       }
       return
     }
-    if (!force && session.isAutoConnectPaused()) {
-      this.setData({
-        connectedDevices: [],
-        scanning: false,
-        connecting: false,
-        statusTitle: '当前没有已连接设备',
-        statusDetail: '上次连接已主动断开'
-      })
-      return
-    }
+    this.clearAutoConnectTimer()
+    if (snapshot.scanning) ble.stopScan().catch(() => {})
+    this.setData({
+      connectedDevices: [],
+      scanning: false,
+      connecting: false,
+      statusTitle: '当前没有已连接设备',
+      statusDetail: '点“开始扫描”寻找已支持的设备'
+    })
+  },
+
+  async startDeviceScan() {
+    if (this._initializing || this.data.connecting || ble.getSnapshot().connected) return
 
     this._initializing = true
+    session.resumeAutoConnect()
     this.setData({
       errorText: '',
       statusTitle: '正在寻找设备',
@@ -143,6 +147,33 @@ Page({
     } finally {
       this._initializing = false
     }
+  },
+
+  async stopDeviceScan(options) {
+    this.clearAutoConnectTimer()
+    try {
+      await ble.stopScan()
+    } finally {
+      if (!ble.getSnapshot().connected) {
+        this.setData({
+          scanning: false,
+          connecting: false,
+          statusTitle: options && options.silent ? this.data.statusTitle : '扫描已停止',
+          statusDetail: options && options.silent
+            ? this.data.statusDetail
+            : '点“开始扫描”可以继续寻找设备'
+        })
+      }
+    }
+  },
+
+  async toggleScan() {
+    if (this.data.connecting) return
+    if (this.data.scanning || ble.getSnapshot().scanning) {
+      await this.stopDeviceScan()
+      return
+    }
+    await this.startDeviceScan()
   },
 
   scheduleAutoConnect() {
@@ -189,20 +220,6 @@ Page({
       statusDetail: '点击设备进入设备控制',
       errorText: ''
     })
-  },
-
-  async retryConnection() {
-    if (this.data.connecting) return
-    session.resumeAutoConnect()
-    this.clearAutoConnectTimer()
-    try {
-      await ble.stopScan()
-      if (ble.getSnapshot().connected) await session.disconnect()
-    } catch (error) {
-      // 重新初始化会刷新最终状态。
-    }
-    this.setData({ connectedDevices: [], connecting: false })
-    await this.initializeConnection(true)
   },
 
   openDevice(event) {

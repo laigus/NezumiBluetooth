@@ -2,7 +2,7 @@
 
 本文只保留可重复使用的记录结构。真实文件名、时间、设备标识、帧内容、摘要和单次分析结论保存在本机采集目录，不写入项目说明。
 
-采集步骤见 [IPHONE_BLUETOOTH_CAPTURE.md](IPHONE_BLUETOOTH_CAPTURE.md)。
+Apple 平台上的通用采集步骤见 [iPhone 蓝牙数据采集](../apple/IPHONE_BLUETOOTH_CAPTURE.md)。本文只记录 COCO 对采集证据的设备专属要求。
 
 ## 输入保全
 

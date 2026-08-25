@@ -8,7 +8,10 @@
     <view class="device-connection">{{connectionText}}</view>
     <view class="device-meta"><text wx:if="{{rssiText}}">{{rssiText}}</text><text>{{mtuText}}</text></view>
     <view class="device-actions">
+      <button class="manual-button" disabled="{{!manualAvailable || importing || disconnecting}}" bindtap="openManual">手动模式</button>
       <button class="import-button" loading="{{importing}}" disabled="{{importing || disconnecting}}" bindtap="importFrequency">导入频率</button>
+    </view>
+    <view class="device-actions secondary-actions">
       <button class="disconnect-button" loading="{{disconnecting}}" disabled="{{disconnecting}}" bindtap="disconnectDevice">断开蓝牙</button>
     </view>
   </view>
@@ -34,6 +37,10 @@
       <view class="time-progress" wx:if="{{item.progressVisible}}">
         <view class="progress-copy"><text>{{item.progressTimeText}}</text><text>{{item.progressPercentText}}</text></view>
         <view class="progress-track"><view class="progress-fill" style="width: {{item.progressWidth}};"></view></view>
+      </view>
+      <view class="loop-option {{item.loopEnabled ? 'enabled' : ''}}" data-id="{{item.id}}" catchtap="toggleLoop">
+        <view class="loop-label"><text class="loop-icon">↻</text><text>循环播放</text></view>
+        <view class="loop-switch"><view class="loop-knob"></view></view>
       </view>
       <view class="frequency-actions">
         <button class="start-action" data-id="{{item.id}}" disabled="{{item.startDisabled}}" catchtap="startFrequency">开始</button>

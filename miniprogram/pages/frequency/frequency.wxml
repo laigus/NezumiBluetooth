@@ -21,6 +21,10 @@
       <text class="progress-time">{{progressTimeText}}</text>
       <view class="progress-track"><view class="progress-fill" style="width: {{progressWidth}};"></view></view>
     </view>
+    <view class="loop-option {{loopEnabled ? 'enabled' : ''}}" catchtap="toggleLoop">
+      <view class="loop-label"><text class="loop-icon">↻</text><text>循环播放</text></view>
+      <view class="loop-switch"><view class="loop-knob"></view></view>
+    </view>
     <view class="run-actions">
       <button class="start-button" disabled="{{!connected || runtimeBusy}}" loading="{{running}}" bindtap="startFrequency">开始</button>
       <button class="stop-button" disabled="{{!connected || !active || !runtimeBusy}}" loading="{{stopping}}" bindtap="stopFrequency">停止</button>
@@ -46,4 +50,8 @@
   </view>
 
   <button class="export-button" loading="{{exporting}}" disabled="{{exporting}}" bindtap="exportFrequency">导出 / 分享频率</button>
+  <view class="bottom-management" wx:if="{{local}}">
+    <button class="management-button rename" disabled="{{runtimeBusy || managing}}" bindtap="renameFrequency">修改名称</button>
+    <button class="management-button delete" disabled="{{runtimeBusy || managing}}" bindtap="deleteFrequency">删除频率</button>
+  </view>
 </view>

@@ -15,7 +15,9 @@ function safeDecode(value) {
 function stateText(state, id) {
   if (state.programId !== id) return '准备就绪'
   const labels = {
-    running: `正在运行 · ${state.sentFrames} / ${state.totalFrames} 帧`,
+    running: state.loop
+      ? `循环第 ${Number(state.cycle || 0) + 1} 轮 · ${state.sentFrames} / ${state.totalFrames} 帧`
+      : `正在运行 · ${state.sentFrames} / ${state.totalFrames} 帧`,
     stopping: '正在发送停止指令',
     completed: '已完成',
     stopped: '已停止',
@@ -31,6 +33,7 @@ Page({
     name: '',
     description: '',
     originText: '',
+    local: false,
     waveform: [],
     durationText: '--',
     durationClock: '0:00',
@@ -42,12 +45,14 @@ Page({
     active: false,
     running: false,
     stopping: false,
+    loopEnabled: false,
     statusText: '准备就绪',
     progressVisible: false,
     progressWidth: '0%',
     progressTimeText: '0:00 / 0:00',
     progressPercentText: '0%',
     exporting: false,
+    managing: false,
     errorText: ''
   },
 
@@ -96,7 +101,8 @@ Page({
     this.setData({
       name: frequency.name,
       description: frequency.description,
-      originText: frequency.origin === 'built-in' ? '内置频率' : '本机导入',
+      originText: frequency.origin === 'built-in' ? '内置频率' : '本机频率',
+      local: frequency.origin === 'local',
       waveform: waveformBars(frequency, 64),
       durationText: stats.durationText,
       durationClock: stats.durationClock,
@@ -118,6 +124,9 @@ Page({
       active,
       running: active && state.status === 'running',
       stopping: active && state.status === 'stopping',
+      loopEnabled: active && state.status !== 'idle'
+        ? Boolean(state.loop)
+        : this.data.loopEnabled,
       statusText: stateText(state, this.data.frequencyId),
       progressVisible: progress.visible,
       progressWidth: progress.width,
@@ -130,13 +139,20 @@ Page({
     if (frequencyRuntime.isRunning()) return
     this.setData({ errorText: '' })
     try {
-      const result = await frequencyRuntime.start(this.data.frequencyId)
+      const result = await frequencyRuntime.start(this.data.frequencyId, {
+        loop: this.data.loopEnabled
+      })
       if (result.status === 'completed' && this._visible) {
         wx.showToast({ title: '频率已完成', icon: 'success' })
       }
     } catch (error) {
       this.showError(error)
     }
+  },
+
+  toggleLoop() {
+    if (this.data.runtimeBusy) return
+    this.setData({ loopEnabled: !this.data.loopEnabled })
   },
 
   async stopFrequency() {
@@ -164,6 +180,59 @@ Page({
       this.showError(error)
     } finally {
       this.setData({ exporting: false })
+    }
+  },
+
+  async renameFrequency() {
+    if (!this.data.local || this.data.runtimeBusy || this.data.managing) return
+    this.setData({ managing: true, errorText: '' })
+    try {
+      const result = await new Promise((resolve, reject) => {
+        wx.showModal({
+          title: '修改频率名称',
+          content: `当前名称：${this.data.name}`,
+          editable: true,
+          placeholderText: '输入新名称',
+          confirmText: '保存',
+          success: resolve,
+          fail: reject
+        })
+      })
+      if (!result.confirm) return
+      const name = String(result.content || '').trim()
+      if (!name) throw new Error('频率名称不能为空')
+      frequencyRuntime.renameFrequency(this.data.frequencyId, name)
+      this.loadFrequency()
+      wx.showToast({ title: '名称已保存', icon: 'success' })
+    } catch (error) {
+      this.showError(error)
+    } finally {
+      this.setData({ managing: false })
+    }
+  },
+
+  async deleteFrequency() {
+    if (!this.data.local || this.data.runtimeBusy || this.data.managing) return
+    this.setData({ managing: true, errorText: '' })
+    try {
+      const result = await new Promise((resolve, reject) => {
+        wx.showModal({
+          title: '删除本机频率',
+          content: `删除“${this.data.name}”后，本机将不再保留这项频率。`,
+          confirmText: '删除',
+          confirmColor: '#C64052',
+          success: resolve,
+          fail: reject
+        })
+      })
+      if (!result.confirm) return
+      frequencyRuntime.deleteFrequency(this.data.frequencyId)
+      wx.showToast({ title: '已删除', icon: 'success' })
+      setTimeout(() => wx.navigateBack(), 350)
+    } catch (error) {
+      this.showError(error)
+    } finally {
+      this.setData({ managing: false })
     }
   },
 

@@ -1,7 +1,7 @@
 .frequency-page { display: flex; height: 100vh; min-height: 0; padding: 18rpx 24rpx 20rpx; overflow: hidden; flex-direction: column; box-sizing: border-box; }
 .frequency-page .card { flex-shrink: 0; margin: 0 0 12rpx; padding: 18rpx 22rpx; }
 .frequency-hero { flex-shrink: 0; margin-bottom: 12rpx; padding: 24rpx 28rpx 20rpx; color: #fff; background: linear-gradient(145deg,#252d54,#514da5 56%,#7866d7); border-radius: 30rpx; box-shadow: 0 14rpx 34rpx rgba(63,58,143,.2); }
-.hero-top, .hero-metrics, .card-head, .wave-axis, .detail-grid, .runtime-head, .run-actions { display: flex; align-items: center; }
+.hero-top, .hero-metrics, .card-head, .wave-axis, .detail-grid, .runtime-head, .run-actions, .bottom-management { display: flex; align-items: center; }
 .hero-top, .card-head, .wave-axis, .runtime-head { justify-content: space-between; }
 .origin-tag, .connection-tag { padding: 5rpx 11rpx; font-size: 17rpx; border-radius: 10rpx; }
 .origin-tag { color: #e5e4ff; background: rgba(255,255,255,.12); }
@@ -25,23 +25,37 @@
 .progress-time { display: block; color: #858fa1; font-size: 17rpx; }
 .progress-track { height: 10rpx; margin-top: 7rpx; overflow: hidden; background: #e7eaf3; border-radius: 999rpx; }
 .progress-fill { height: 100%; background: linear-gradient(90deg,#3475ed,#7164df); border-radius: 999rpx; transition: width .2s linear; }
+.loop-option { display: flex; align-items: center; justify-content: space-between; margin-top: 12rpx; padding: 10rpx 13rpx; color: #7b8595; background: #f3f5f8; border-radius: 14rpx; }
+.loop-label { display: flex; align-items: center; font-size: 19rpx; }
+.loop-icon { margin-right: 8rpx; color: #747d8e; font-size: 27rpx; line-height: 1; }
+.loop-switch { position: relative; width: 60rpx; height: 32rpx; background: #cdd3dc; border-radius: 999rpx; }
+.loop-knob { position: absolute; top: 4rpx; left: 4rpx; width: 24rpx; height: 24rpx; background: #fff; border-radius: 50%; box-shadow: 0 2rpx 6rpx rgba(35,45,65,.18); transition: transform .18s ease; }
+.loop-option.enabled { color: #555dc2; background: #eff0ff; }
+.loop-option.enabled .loop-icon { color: #5f62d2; }
+.loop-option.enabled .loop-switch { background: #6568d7; }
+.loop-option.enabled .loop-knob { transform: translateX(28rpx); }
 .run-actions { margin-top: 13rpx; }
 .run-actions button { display: flex; height: 68rpx; flex: 1; align-items: center; justify-content: center; margin: 0; padding: 0; font-size: 24rpx; line-height: 1.2; border-radius: 18rpx; }
 .start-button { color: #fff; background: linear-gradient(135deg,#3475ed,#6258de); }
 .stop-button { margin-left: 12rpx !important; color: #c43c51; background: #fff0f2; }
 .run-actions button[disabled] { color: #aeb5bf !important; background: #eff1f4 !important; }
-.waveform-card { display: flex; min-height: 210rpx; flex: 1 1 auto !important; flex-direction: column; overflow: hidden; }
+.frequency-page .waveform-card { display: flex; height: 218rpx; min-height: 218rpx; padding: 13rpx 18rpx 11rpx; flex: 0 0 218rpx !important; flex-direction: column; overflow: hidden; box-sizing: border-box; }
 .card-head { flex-shrink: 0; }
 .section-title { font-size: 25rpx; }
 .section-subtitle { margin-top: 3rpx; font-size: 18rpx; line-height: 1.35; }
 .range-tag { padding: 5rpx 10rpx; color: #5c63c7; font-size: 16rpx; background: #eef0ff; border-radius: 9rpx; }
-.waveform-chart { display: flex; min-height: 105rpx; flex: 1; align-items: flex-end; margin-top: 12rpx; padding: 10rpx 8rpx 0; background: linear-gradient(180deg,#f8f9fe,#eff2f9); border-radius: 16rpx; }
+.waveform-chart { display: flex; height: 107rpx; min-height: 107rpx; flex: 0 0 107rpx; align-items: flex-end; margin-top: 7rpx; padding: 7rpx 7rpx 0; background: linear-gradient(180deg,#f8f9fe,#eff2f9); border-radius: 13rpx; box-sizing: border-box; }
 .wave-column { display: flex; min-width: 2rpx; height: 100%; flex: 1; align-items: flex-end; margin: 0 1rpx; }
 .wave-fill { width: 100%; min-height: 6rpx; background: linear-gradient(180deg,#7464e4,#3478ed); border-radius: 5rpx 5rpx 2rpx 2rpx; }
-.wave-axis { flex-shrink: 0; margin-top: 5rpx; color: #98a2b0; font-size: 16rpx; }
+.wave-axis { flex-shrink: 0; margin-top: 3rpx; color: #98a2b0; font-size: 15rpx; }
 .detail-card { padding-top: 15rpx !important; padding-bottom: 13rpx !important; }
 .detail-grid { flex-wrap: wrap; margin-top: 5rpx; }
 .detail-item { display: flex; width: 50%; padding: 6rpx 0; flex-direction: column; }
 .detail-label { color: #909baa; font-size: 16rpx; }
 .detail-value { margin-top: 2rpx; color: #2f3b50; font-size: 20rpx; font-weight: 700; }
 .export-button { display: flex; height: 68rpx; flex-shrink: 0; align-items: center; justify-content: center; margin: 0; padding: 0; color: #4f5fc4; font-size: 22rpx; line-height: 1.2; background: #e9edff; border-radius: 18rpx; }
+.bottom-management { flex-shrink: 0; margin-top: 12rpx; }
+.management-button { display: flex; height: 68rpx; flex: 1; align-items: center; justify-content: center; margin: 0; padding: 0; font-size: 22rpx; line-height: 1.2; border-radius: 18rpx; }
+.management-button.rename { color: #5361b9; background: #eef1ff; }
+.management-button.delete { margin-left: 12rpx; color: #bd4555; background: #fff1f3; }
+.management-button[disabled] { color: #aeb5bf !important; background: #eff1f4 !important; }

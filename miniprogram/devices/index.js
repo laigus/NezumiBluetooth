@@ -20,6 +20,9 @@ function validateDefinition(definition) {
       }
     })
   }
+  if (definition.features && definition.features.manualControl && !definition.pages.manual) {
+    throw new Error(`设备模块 ${definition.id} 缺少手动控制页面`)
+  }
   return definition
 }
 

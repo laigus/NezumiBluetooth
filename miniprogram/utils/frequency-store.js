@@ -108,7 +108,7 @@ class FrequencyStore {
       (item) => item.deviceProfileId === checked.deviceProfileId
     ).length
     if (localCount >= MAX_LOCAL_FREQUENCIES) {
-      throw new Error(`本机最多保存 ${MAX_LOCAL_FREQUENCIES} 个导入频率`)
+      throw new Error(`本机最多保存 ${MAX_LOCAL_FREQUENCIES} 个频率`)
     }
     const duplicate = this.list(checked.deviceProfileId).find(
       (item) => item.integrity.scheduleSha256 === checked.integrity.scheduleSha256
@@ -125,6 +125,27 @@ class FrequencyStore {
     this.locals.push(checked)
     this._save()
     return publicItem(checked, 'local')
+  }
+
+  renameFrequency(id, name, deviceProfileId) {
+    const index = this.locals.findIndex(
+      (item) => item.id === id && (!deviceProfileId || item.deviceProfileId === deviceProfileId)
+    )
+    if (index < 0) throw new Error('只有本机频率可以改名')
+    const renamed = validateForKnownProfile(Object.assign({}, this.locals[index], { name }))
+    this.locals[index] = renamed
+    this._save()
+    return publicItem(renamed, 'local')
+  }
+
+  deleteFrequency(id, deviceProfileId) {
+    const index = this.locals.findIndex(
+      (item) => item.id === id && (!deviceProfileId || item.deviceProfileId === deviceProfileId)
+    )
+    if (index < 0) throw new Error('只有本机频率可以删除')
+    const deleted = this.locals.splice(index, 1)[0]
+    this._save()
+    return publicItem(deleted, 'local')
   }
 
   exportJson(id, deviceProfileId) {

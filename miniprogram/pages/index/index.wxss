@@ -34,5 +34,6 @@
 .radar-core { position: absolute; top: 58rpx; left: 58rpx; width: 20rpx; height: 20rpx; background: #5c6ed9; border-radius: 50%; }
 .empty-title { color: #2f3b4e; font-size: 29rpx; font-weight: 700; }
 .empty-copy { margin-top: 11rpx; color: #8490a0; font-size: 22rpx; line-height: 1.6; }
-.connect-button { margin-top: 28rpx; font-size: 26rpx; }
+.connect-button { display: flex; height: 76rpx; align-items: center; justify-content: center; margin-top: 28rpx; padding: 0; font-size: 26rpx; line-height: 1.2; }
+.connect-button.stop-scan { color: #a7384a; background: #fff0f2; box-shadow: none; }
 .manager-note { padding: 30rpx 16rpx 0; color: #929dac; font-size: 20rpx; line-height: 1.6; text-align: center; }

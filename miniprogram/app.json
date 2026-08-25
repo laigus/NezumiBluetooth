@@ -4,6 +4,7 @@
     "pages/debug/debug",
     "pages/control/control",
     "pages/frequency/frequency",
+    "pages/manual/manual",
     "pages/device/device"
   ],
   "window": {

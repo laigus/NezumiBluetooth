@@ -56,13 +56,17 @@ class ProgramRunner {
     return Boolean(this._active)
   }
 
-  start(program) {
+  start(program, options) {
     if (this._active) return Promise.reject(new Error('已有模式正在运行'))
     let checked
     try {
       checked = validateProgram(program)
     } catch (error) {
       return Promise.reject(error)
+    }
+    const loop = Boolean(options && options.loop)
+    if (loop && checked.durationMs <= 0) {
+      return Promise.reject(new Error('零时长模式不能循环运行'))
     }
 
     let resolveRun
@@ -74,6 +78,8 @@ class ProgramRunner {
     const active = {
       program: checked,
       index: 0,
+      cycle: 0,
+      loop,
       origin: this._now(),
       timer: null,
       inFlight: null,
@@ -91,6 +97,14 @@ class ProgramRunner {
   _schedule(active) {
     if (this._active !== active || active.stopping) return
     if (active.index >= active.program.frames.length) {
+      if (active.loop) {
+        active.index = 0
+        active.cycle += 1
+        active.origin = this._now()
+        this._emit('running', active)
+        this._schedule(active)
+        return
+      }
       this._settle(active, 'completed')
       return
     }
@@ -115,6 +129,7 @@ class ProgramRunner {
       active.inFlight = Promise.resolve(this._send(frame.hex, {
         programId: active.program.id,
         frameIndex: active.index,
+        cycle: active.cycle,
         atMs: frame.atMs
       }))
       await active.inFlight
@@ -137,7 +152,16 @@ class ProgramRunner {
 
     if (!active) {
       await this._send(stopHex, { manualStop: true })
-      const result = { status: 'stopped', sentFrames: 0, totalFrames: 0, elapsedMs: 0, durationMs: 0 }
+      const result = {
+        status: 'stopped',
+        loop: false,
+        cycle: 0,
+        sentFrames: 0,
+        totalSentFrames: 0,
+        totalFrames: 0,
+        elapsedMs: 0,
+        durationMs: 0
+      }
       this._onState(result)
       return result
     }
@@ -207,7 +231,10 @@ class ProgramRunner {
       status,
       programId: program ? program.id : '',
       label: program ? program.label : '',
+      loop: active ? active.loop : false,
+      cycle: active ? active.cycle : 0,
       sentFrames,
+      totalSentFrames: active ? (active.cycle * frames.length) + sentFrames : 0,
       totalFrames: frames.length,
       elapsedMs: lastSent ? lastSent.atMs : 0,
       durationMs: program ? program.durationMs : 0,

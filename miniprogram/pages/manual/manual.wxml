@@ -1,0 +1,78 @@
+<view class="page-shell manual-page">
+  <view class="manual-hero">
+    <view class="hero-topline">
+      <view class="hero-eyebrow">MANUAL CONTROL</view>
+      <view class="connection-tag {{connected ? 'online' : ''}}">{{connected ? '设备已连接' : '设备已断开'}}</view>
+    </view>
+    <view class="hero-title">手动模式</view>
+    <view class="hero-copy">调节两个参数；播放后继续滑动，控制数据会随之更新。</view>
+  </view>
+
+  <view class="error-banner" wx:if="{{errorText}}">{{errorText}}</view>
+
+  <view class="parameter-card">
+    <view class="parameter-head">
+      <view class="parameter-identity">
+        <view class="parameter-icon wave-icon"><view class="wave-line">∿</view></view>
+        <view><view class="parameter-name">频率</view><view class="parameter-hint">连续调节</view></view>
+      </view>
+      <view class="parameter-value">
+        {{frequencyValue}}<text wx:if="{{frequencyValue > 0}}">%</text>
+      </view>
+    </view>
+    <view
+      class="smooth-slider frequency-slider {{stopping ? 'disabled' : ''}}"
+      catchtouchstart="onFrequencyTouchStart"
+      catchtouchmove="onFrequencyTouchMove"
+      catchtouchend="onFrequencyTouchEnd"
+      catchtouchcancel="onFrequencyTouchEnd"
+    >
+      <view id="frequency-slider-rail" class="slider-rail">
+        <view class="slider-fill" style="width: {{frequencyValue}}%;"></view>
+        <view class="slider-thumb" style="left: {{frequencyValue}}%;"><view class="thumb-core"></view></view>
+      </view>
+    </view>
+    <view class="slider-scale"><text>0</text><text>最大</text></view>
+  </view>
+
+  <view class="parameter-card suction-card">
+    <view class="parameter-head">
+      <view class="parameter-identity">
+        <view class="parameter-icon suction-icon"><view class="suction-ring"></view><view class="suction-core"></view></view>
+        <view><view class="parameter-name">吸</view><view class="parameter-hint">连续调节</view></view>
+      </view>
+      <view class="parameter-value warm">
+        {{suctionValue}}<text wx:if="{{suctionValue > 0}}">%</text>
+      </view>
+    </view>
+    <view
+      class="smooth-slider suction-slider {{stopping ? 'disabled' : ''}}"
+      catchtouchstart="onSuctionTouchStart"
+      catchtouchmove="onSuctionTouchMove"
+      catchtouchend="onSuctionTouchEnd"
+      catchtouchcancel="onSuctionTouchEnd"
+    >
+      <view id="suction-slider-rail" class="slider-rail">
+        <view class="slider-fill" style="width: {{suctionValue}}%;"></view>
+        <view class="slider-thumb" style="left: {{suctionValue}}%;"><view class="thumb-core"></view></view>
+      </view>
+    </view>
+    <view class="slider-scale"><text>0</text><text>最大</text></view>
+  </view>
+
+  <view class="player-card">
+    <view class="player-status"><view class="status-dot {{running ? 'running' : ''}}"></view><text>{{statusText}}</text></view>
+    <view class="player-button {{running ? 'playing' : ''}} {{(!connected || stopping) ? 'disabled' : ''}}" hover-class="player-button-pressed" bindtap="togglePlayback">
+      <view class="play-glyph" wx:if="{{!running}}"></view>
+      <view class="stop-glyph" wx:else></view>
+    </view>
+    <view class="elapsed-time">{{elapsedText}}</view>
+    <view class="player-label">{{recording ? '正在录制' : (running ? '点击停止' : '点击播放')}}</view>
+  </view>
+
+  <button class="record-button {{recording ? 'recording' : ''}}" disabled="{{!connected || stopping || (running && !recording)}}" bindtap="toggleRecording">
+    <view class="record-dot"></view>
+    <text>{{recording ? '完成并保存' : '创建频率'}}</text>
+  </button>
+  <view class="record-help">创建频率会从开始播放起记录每次参数变化，停止后输入名称并保存到本机列表。</view>
+</view>

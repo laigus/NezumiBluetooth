@@ -28,9 +28,12 @@ function idleState() {
     programId: '',
     label: '',
     sentFrames: 0,
+    totalSentFrames: 0,
     totalFrames: 0,
     elapsedMs: 0,
     durationMs: 0,
+    loop: false,
+    cycle: 0,
     error: null
   }
 }
@@ -40,6 +43,7 @@ class FrequencyRuntime {
     this.store = new FrequencyStore()
     this.listeners = []
     this._progressStartedAt = 0
+    this._progressCycle = 0
     this._progressTimer = null
     this.state = idleState()
     this._definitionId = ''
@@ -74,6 +78,35 @@ class FrequencyRuntime {
     const context = frequencyContext()
     if (!context) throw new Error('当前设备未提供频率导入能力')
     return this.store.importJson(text, context.profile.id)
+  }
+
+  saveFrequency(input) {
+    const context = frequencyContext()
+    if (!context) throw new Error('当前设备未提供频率保存能力')
+    const saved = this.store.importFrequency(Object.assign({}, input, {
+      deviceProfileId: context.profile.id
+    }), context.profile.id)
+    this.emit()
+    return saved
+  }
+
+  renameFrequency(id, name) {
+    if (this.runner.isRunning()) throw new Error('请先停止正在运行的频率')
+    const context = frequencyContext()
+    if (!context) throw new Error('当前设备未提供频率管理能力')
+    const renamed = this.store.renameFrequency(id, name, context.profile.id)
+    this.emit()
+    return renamed
+  }
+
+  deleteFrequency(id) {
+    if (this.runner.isRunning()) throw new Error('请先停止正在运行的频率')
+    const context = frequencyContext()
+    if (!context) throw new Error('当前设备未提供频率管理能力')
+    const deleted = this.store.deleteFrequency(id, context.profile.id)
+    if (this.state.programId === id) this.state = idleState()
+    this.emit()
+    return deleted
   }
 
   exportJson(id) {
@@ -114,6 +147,11 @@ class FrequencyRuntime {
 
   onRunnerState(state) {
     const durationMs = Number(state.durationMs || 0)
+    const cycle = Number(state.cycle || 0)
+    if (state.status === 'running' && cycle !== this._progressCycle) {
+      this._progressCycle = cycle
+      this._progressStartedAt = Date.now()
+    }
     const clockElapsedMs = this._progressStartedAt
       ? Math.max(0, Date.now() - this._progressStartedAt)
       : 0
@@ -133,6 +171,7 @@ class FrequencyRuntime {
 
   startProgressClock() {
     this.stopProgressClock()
+    this._progressCycle = 0
     this._progressStartedAt = Date.now()
     this._progressTimer = setInterval(() => {
       if (!['running', 'stopping'].includes(this.state.status)) return
@@ -152,22 +191,27 @@ class FrequencyRuntime {
     if (this._progressTimer !== null) clearInterval(this._progressTimer)
     this._progressTimer = null
     this._progressStartedAt = 0
+    this._progressCycle = 0
   }
 
   isRunning() {
     return this.runner.isRunning()
   }
 
-  async start(id) {
+  async start(id, options) {
     if (!compatibleConnection()) throw new Error('设备连接已断开')
     const context = frequencyContext()
+    if (typeof context.controller.isManualControlActive === 'function' &&
+        context.controller.isManualControlActive()) {
+      throw new Error('请先停止手动模式')
+    }
     const frequency = this.get(id)
     if (!frequency) throw new Error('没有找到所选频率')
     this.state = Object.assign({}, this.state, { deviceProfileId: context.profile.id })
     this.setKeepScreenOn(true)
     this.startProgressClock()
     try {
-      return await this.runner.start(makeRunnableFrequency(frequency, context.profile))
+      return await this.runner.start(makeRunnableFrequency(frequency, context.profile), options)
     } finally {
       this.stopProgressClock()
       this.setKeepScreenOn(false)

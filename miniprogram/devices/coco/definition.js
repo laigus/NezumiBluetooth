@@ -30,7 +30,8 @@ module.exports = {
   },
   pages: {
     control: '/pages/control/control',
-    frequency: '/pages/frequency/frequency'
+    frequency: '/pages/frequency/frequency',
+    manual: '/pages/manual/manual'
   },
   card: {
     protocolText: 'FF60 / FF61 / FF62',
@@ -40,7 +41,8 @@ module.exports = {
     savedCommandsKey: 'haohao.bluetooth.savedCommands'
   },
   features: {
-    frequencies: true
+    frequencies: true,
+    manualControl: true
   },
   frequencies,
   matchAdvertisement,

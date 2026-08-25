@@ -15,6 +15,7 @@ const view = require(path.join(root, 'miniprogram/utils/frequency-view'))
 const sha256 = require(path.join(root, 'miniprogram/utils/sha256'))
 const { FrequencyStore, STORAGE_KEY } = require(path.join(root, 'miniprogram/utils/frequency-store'))
 const { ProgramRunner, validateProgram } = require(path.join(root, 'miniprogram/utils/program-runner'))
+const manualProtocol = require(path.join(root, 'miniprogram/devices/coco/manual-protocol'))
 
 const tests = []
 
@@ -95,7 +96,7 @@ test('mini program files, bindings, imports, and local mode are valid', () => {
     const wxml = fs.readFileSync(wxmlPath, 'utf8')
     const js = fs.readFileSync(jsPath, 'utf8')
     assertWxmlBalanced(wxmlPath)
-    Array.from(wxml.matchAll(/(?:bind|catch)(?:tap|input|change)="([A-Za-z_$][\w$]*)"/g))
+    Array.from(wxml.matchAll(/(?:bind|catch)(?:tap|input|change|changing|touchstart|touchmove|touchend|touchcancel)="([A-Za-z_$][\w$]*)"/g))
       .map((match) => match[1])
       .forEach((handler) => {
         assert.ok(new RegExp(`\\b${handler}\\s*\\(`).test(js), `${pagePath}: missing ${handler}`)
@@ -130,6 +131,8 @@ test('device module registry and profile preserve the BLE contract', () => {
   assert.strictEqual(definition.id, 'coco')
   assert.strictEqual(profile.id, 'captured-ff60-device')
   assert.strictEqual(definition.pages.control, '/pages/control/control')
+  assert.strictEqual(definition.pages.manual, '/pages/manual/manual')
+  assert.strictEqual(definition.features.manualControl, true)
   assert.strictEqual(
     devices.matchDevice({ name: 'COCO', advertisServiceUUIDs: profile.match.advertisedServiceUUIDs }),
     definition
@@ -140,6 +143,21 @@ test('device module registry and profile preserve the BLE contract', () => {
   assert.strictEqual(profile.transport.requestedMtu, 23)
   assert.strictEqual(profile.transport.writeType, 'writeNoResponse')
   assert.strictEqual(profile.control.stopHex, 'C3 7E 25 62 63')
+  assert.throws(() => manualProtocol.frequencyHex(0), /停止数据/)
+  assert.throws(() => manualProtocol.suctionHex(0), /停止数据/)
+  assert.strictEqual(manualProtocol.frequencyHex(1), 'C3 7C 25 60 6F')
+  assert.strictEqual(manualProtocol.frequencyHex(100), 'C3 7C 25 76 5D')
+  assert.strictEqual(manualProtocol.suctionHex(1), 'C3 7D 25 60 6E')
+  assert.strictEqual(manualProtocol.config.finalRepeatCount, 2)
+  assert.deepStrictEqual(
+    manualProtocol.buildFrames({ frequency: 45, suction: 55 }).map((frame) => frame.channel),
+    ['frequency', 'suction']
+  )
+  assert.deepStrictEqual(manualProtocol.buildFrames({ frequency: 0, suction: 0 }), [])
+  assert.deepStrictEqual(
+    manualProtocol.buildFrames({ frequency: 0, suction: 55 }).map((frame) => frame.channel),
+    ['suction']
+  )
 })
 
 test('BLE manager scans, connects, subscribes, chunks, and disconnects', async () => {
@@ -194,7 +212,8 @@ test('BLE manager scans, connects, subscribes, chunks, and disconnects', async (
         serviceId: options.serviceId,
         characteristicId: options.characteristicId,
         writeType: options.writeType,
-        length: options.value.byteLength
+        length: options.value.byteLength,
+        hex: codec.arrayBufferToHex(options.value)
       })
       options.success({})
     }
@@ -222,6 +241,39 @@ test('BLE manager scans, connects, subscribes, chunks, and disconnects', async (
     await manager.write(new Uint8Array(45).buffer)
     assert.deepStrictEqual(calls.writes.map((write) => write.length), [20, 20, 5])
     assert.ok(calls.writes.every((write) => write.writeType === 'writeNoResponse'))
+    controller.beginManualControl()
+    assert.strictEqual(controller.isManualControlActive(), true)
+    assert.throws(() => controller.beginManualControl(), /已经在运行/)
+    await controller.sendManualState({ frequency: 40, suction: 25 })
+    assert.deepStrictEqual(calls.writes.slice(-2).map((write) => write.length), [5, 5])
+    const manualWriteCount = calls.writes.length
+    await controller.sendManualState({ frequency: 40, suction: 25 })
+    assert.strictEqual(calls.writes.length, manualWriteCount)
+    await controller.sendManualState({ frequency: 0, suction: 0 }, { force: true })
+    assert.strictEqual(calls.writes.length, manualWriteCount + 2)
+    assert.deepStrictEqual(calls.writes.slice(-2).map((write) => write.hex), [
+      profile.control.stopHex,
+      profile.control.stopHex
+    ])
+    await controller.sendManualState({ frequency: 100, suction: 0 })
+    await controller.sendManualState({ frequency: 100, suction: 60 })
+    const beforeSingleZero = calls.writes.length
+    await controller.sendManualState({ frequency: 0, suction: 60 })
+    assert.strictEqual(calls.writes.length, beforeSingleZero + 2)
+    assert.deepStrictEqual(calls.writes.slice(-2).map((write) => write.hex), [
+      profile.control.stopHex,
+      manualProtocol.suctionHex(60)
+    ])
+    const beforeFinalZero = calls.writes.length
+    await controller.sendManualState({ frequency: 0, suction: 60 }, { force: true })
+    assert.strictEqual(calls.writes.length, beforeFinalZero + 4)
+    assert.deepStrictEqual(calls.writes.slice(-4).map((write) => write.hex), [
+      profile.control.stopHex,
+      manualProtocol.suctionHex(60),
+      profile.control.stopHex,
+      manualProtocol.suctionHex(60)
+    ])
+    controller.endManualControl()
     await manager.disconnect()
     assert.strictEqual(manager.connected, false)
   } finally {
@@ -288,6 +340,50 @@ test('built-in frequency replays completely and stops immediately', async () => 
   pendingTimer()
   await new Promise((resolve) => setImmediate(resolve))
   assert.deepStrictEqual(stoppedWrites, ['C3 7C 25 63 6E', profile.control.stopHex])
+
+  let loopNow = 0
+  let loopTimerId = 0
+  const loopTimers = []
+  const loopWrites = []
+  const loopStates = []
+  const loopRunner = new ProgramRunner({
+    now: () => loopNow,
+    setTimer(callback, delay) {
+      const timer = { id: ++loopTimerId, callback, delay, active: true }
+      loopTimers.push(timer)
+      return timer.id
+    },
+    clearTimer(id) {
+      const timer = loopTimers.find((item) => item.id === id)
+      if (timer) timer.active = false
+    },
+    send(hex) { loopWrites.push(hex) },
+    onState(state) { loopStates.push(state) }
+  })
+  const loopPromise = loopRunner.start({
+    id: 'synthetic-loop',
+    label: 'Synthetic loop',
+    durationMs: 10,
+    stopHex: profile.control.stopHex,
+    frames: [
+      { atMs: 0, hex: 'C3 7C 25 63 6E' },
+      { atMs: 10, hex: profile.control.stopHex }
+    ]
+  }, { loop: true })
+  await new Promise((resolve) => setImmediate(resolve))
+  const scheduled = loopTimers.find((timer) => timer.active)
+  loopNow += scheduled.delay
+  scheduled.active = false
+  scheduled.callback()
+  await new Promise((resolve) => setImmediate(resolve))
+  assert.deepStrictEqual(loopWrites.slice(0, 3), [
+    'C3 7C 25 63 6E',
+    profile.control.stopHex,
+    'C3 7C 25 63 6E'
+  ])
+  assert.ok(loopStates.some((state) => state.loop && state.cycle === 1))
+  await loopRunner.stop(profile.control.stopHex)
+  assert.strictEqual((await loopPromise).status, 'stopped')
 })
 
 test('frequency schema and local store reject corruption and preserve exports', () => {
@@ -318,6 +414,13 @@ test('frequency schema and local store reject corruption and preserve exports', 
   const exported = JSON.parse(store.exportJson(imported.id, profile.id))
   assert.strictEqual(schema.scheduleSha256(exported.frames), exported.integrity.scheduleSha256)
   assert.throws(() => store.importJson(JSON.stringify(exported)), /相同频率已存在/)
+  const renamed = store.renameFrequency(imported.id, 'Renamed local frequency', profile.id)
+  assert.strictEqual(renamed.name, 'Renamed local frequency')
+  assert.strictEqual(store.get(imported.id, profile.id).name, 'Renamed local frequency')
+  assert.throws(() => store.renameFrequency(builtIn.id, 'No', profile.id), /本机频率/)
+  store.deleteFrequency(imported.id, profile.id)
+  assert.strictEqual(store.get(imported.id, profile.id), null)
+  assert.strictEqual(memory[STORAGE_KEY].length, 0)
 })
 
 test('frequency view produces bounded waveform and time progress', () => {

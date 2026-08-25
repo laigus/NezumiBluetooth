@@ -13,7 +13,9 @@ function deviceName(device, definition) {
 function activeStatus(state, frequencyId) {
   if (state.programId !== frequencyId) return ''
   const labels = {
-    running: `正在运行 · ${state.sentFrames} / ${state.totalFrames} 帧`,
+    running: state.loop
+      ? `循环第 ${Number(state.cycle || 0) + 1} 轮 · ${state.sentFrames} / ${state.totalFrames} 帧`
+      : `正在运行 · ${state.sentFrames} / ${state.totalFrames} 帧`,
     stopping: '正在停止',
     completed: '已完成',
     stopped: '已停止',
@@ -26,6 +28,7 @@ function activeStatus(state, frequencyId) {
 Page({
   data: {
     connected: false,
+    manualAvailable: false,
     deviceName: '蓝牙设备',
     protocolText: '',
     connectionText: '设备已断开',
@@ -41,6 +44,7 @@ Page({
 
   onLoad() {
     this._visible = false
+    this._loopById = Object.create(null)
   },
 
   onShow() {
@@ -82,6 +86,10 @@ Page({
     const name = deviceName(device, definition)
     this.setData({
       connected,
+      manualAvailable: Boolean(
+        connected && definition && definition.features && definition.features.manualControl &&
+        definition.pages && definition.pages.manual
+      ),
       deviceName: name,
       protocolText: definition && definition.card ? definition.card.protocolText : '',
       connectionText: connected ? '专用控制通道已就绪' : '设备连接已断开',
@@ -98,18 +106,20 @@ Page({
     const frequencies = frequencyRuntime.list({ reload: false }).map((item) => {
       const active = state.programId === item.id
       const progress = runtimeProgress(state, item.id)
+      if (active && state.loop) this._loopById[item.id] = true
       return {
         id: item.id,
         name: item.name,
         description: item.description,
         durationText: durationText(item.durationMs),
         frameText: `${item.frames.length} 帧`,
-        originText: item.origin === 'built-in' ? '内置' : '本机导入',
+        originText: item.origin === 'built-in' ? '内置' : '本机',
         statusText: activeStatus(state, item.id),
         progressVisible: progress.visible,
         progressWidth: progress.width,
         progressTimeText: progress.timeText,
         progressPercentText: progress.percentText,
+        loopEnabled: Boolean(this._loopById[item.id]),
         active,
         startDisabled: !this.data.connected || runtimeActive,
         stopDisabled: !this.data.connected || !active || !runtimeActive
@@ -150,12 +160,33 @@ Page({
     wx.navigateTo({ url: `${page}?id=${encodeURIComponent(id)}` })
   },
 
+  openManual() {
+    if (!this.data.manualAvailable) return
+    if (frequencyRuntime.isRunning()) {
+      this.showError(new Error('请先停止正在运行的频率'))
+      return
+    }
+    const definition = session.getActiveDefinition()
+    const page = definition && definition.pages && definition.pages.manual
+    if (!page) return
+    wx.navigateTo({ url: page })
+  },
+
+  toggleLoop(event) {
+    const id = event.currentTarget.dataset.id
+    if (!id || frequencyRuntime.isRunning()) return
+    this._loopById[id] = !this._loopById[id]
+    this.refreshFrequencies()
+  },
+
   async startFrequency(event) {
     const id = event.currentTarget.dataset.id
     if (!id || frequencyRuntime.isRunning()) return
     this.setData({ errorText: '' })
     try {
-      const result = await frequencyRuntime.start(id)
+      const result = await frequencyRuntime.start(id, {
+        loop: Boolean(this._loopById[id])
+      })
       if (result.status === 'completed' && this._visible) {
         wx.showToast({ title: '频率已完成', icon: 'success' })
       }
